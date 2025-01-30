@@ -34,7 +34,7 @@ const ResetPassword = () => {
     try {
       await confirmPasswordReset(auth, oobCode, newPassword);
       toast.success("Password has been successfully reset!");
-      navigate("/login"); // Redirect to login page after success
+      navigate("/login");
     } catch (err) {
       setError("Failed to reset password. Please try again.");
     }
