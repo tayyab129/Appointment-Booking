@@ -1,25 +1,54 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { assets } from "../assets/assets";
 import { NavLink, useNavigate } from "react-router-dom";
+import { auth } from "../../firebase"; 
+import { signOut, onAuthStateChanged } from "firebase/auth"; 
+import { toast } from "react-toastify"; 
+import "react-toastify/dist/ReactToastify.css"; 
 
 const Navbar = () => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
-  const [token, setToken] = useState(true);
+  const [token, setToken] = useState(false); 
+  const [user, setUser] = useState(null); 
 
-  const handleLogout = () => {
-    setToken(false); // Clear the token or user authentication status
-    setShowMenu(false); // Close the menu
-    navigate("/login"); // Redirect to login page
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setToken(true); 
+        setUser(currentUser); 
+      } else {
+        setToken(false); 
+        setUser(null); 
+      }
+    });
+
+    return () => unsubscribe(); 
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+
+      toast.success("Logged out successfully!");
+
+      setToken(false);
+
+      setShowMenu(false);
+
+      navigate("/login");
+    } catch (error) {
+      toast.error("Error logging out. Please try again.");
+    }
   };
 
   return (
-    <div className="flex items-center justify-between text-sm py-4 mb-5 border-b border-b-gray-400 ">
+    <div className="flex items-center justify-between text-sm py-4 mb-5 border-b border-b-gray-400">
       <img
         onClick={() => navigate("/")}
         className="w-44 cursor-pointer"
         src={assets.logo}
-        alt=""
+        alt="Logo"
       />
       <ul className="hidden md:flex items-start gap-8 font-medium">
         <NavLink to="/">
@@ -44,13 +73,13 @@ const Navbar = () => {
           <div className="flex items-center gap-2 cursor-pointer group relative">
             <img
               className="w-8 rounded-full hidden sm:block"
-              src={assets.prifole_pic}
-              alt=""
+              src={user?.photoURL || assets.prifole_pic}
+              alt="Profile"
             />
             <img
               className="w-2.5 hidden sm:block"
               src={assets.dropdown_icon}
-              alt=""
+              alt="Dropdown"
             />
             <div className="absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:block">
               <div className="min-w-48 bg-stone-100 rounded flex flex-col gap-4 p-4">
@@ -67,7 +96,7 @@ const Navbar = () => {
                   My Appointment
                 </p>
                 <p
-                  onClick={() => setToken(false)}
+                  onClick={handleLogout} 
                   className="hover:text-black cursor-pointer"
                 >
                   Logout
@@ -87,7 +116,7 @@ const Navbar = () => {
           onClick={() => setShowMenu(true)}
           className="w-6 md:hidden"
           src={assets.menu_icon}
-          alt=""
+          alt="Menu"
         />
         <div
           className={`${
@@ -95,12 +124,12 @@ const Navbar = () => {
           } md:hidden right-0 top-0 bottom-0 z-20 overflow-hidden bg-white transition-all`}
         >
           <div className="flex items-center justify-between px-5 py-6">
-            <img className="w-36" src={assets.logo} alt="" />
+            <img className="w-36" src={assets.logo} alt="Logo" />
             <img
               className="w-7"
               onClick={() => setShowMenu(false)}
               src={assets.cross_icon}
-              alt=""
+              alt="Close"
             />
           </div>
           <ul className="flex flex-col items-center gap-2 mt-5 px-5 text-lg font-medium">
@@ -147,7 +176,7 @@ const Navbar = () => {
               className="hover:text-black cursor-pointer"
               onClick={(e) => {
                 e.preventDefault();
-                handleLogout();
+                handleLogout(); 
               }}
             >
               Logout

@@ -1,28 +1,34 @@
 import React, { useState } from "react";
 import { auth } from "../../firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"; 
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom"; 
 
-const Login = () => {
+const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+  const [name, setName] = useState(""); 
+  const navigate = useNavigate(); 
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
     try {
-      // Login
-      await signInWithEmailAndPassword(auth, email, password);
-      toast.success("Logged in successfully!");
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user; 
+
+      await updateProfile(user, {
+        displayName: name,
+      });
+
+      toast.success(`${name}! Your account has been created successfully!`);
+      
       setTimeout(() => {
-        
-        navigate('/')
+        navigate("/"); 
       }, 2000);
     } catch (error) {
-      toast.error(`Error: Invalid Credentials`);
+      toast.error(`Error: Something Went Wrong`);
     }
   };
 
@@ -30,8 +36,18 @@ const Login = () => {
     <>
       <form className="min-h-[80vh] flex items-center" onSubmit={onSubmitHandler}>
         <div className="flex flex-col gap-3 m-auto items-start p-8 min-w-[340px] sm:min-w-96 border rounded-xl text-zinc-600 text-sm shadow-lg">
-          <p className="text-xl font-semibold">Login</p>
-          <p>Please log in to book an appointment</p>
+          <p className="text-xl font-semibold">Sign Up</p>
+          <p>Please create an account to book an appointment</p>
+          <div className="w-full">
+            <p>Full Name</p>
+            <input
+              className="border border-zinc-300 rounded w-full p-2 mt-1"
+              type="text"
+              onChange={(e) => setName(e.target.value)}
+              value={name}
+              required
+            />
+          </div>
           <div className="w-full">
             <p>Email</p>
             <input
@@ -56,23 +72,15 @@ const Login = () => {
             type="submit"
             className="bg-primary text-white w-full py-2 rounded-md text-base"
           >
-            Login
+            Sign Up
           </button>
           <p>
-            Don't have an account?{" "}
+            Already have an account?{" "}
             <span
-              onClick={() => navigate("/signup")} // Navigate to the sign-up page
+              onClick={() => navigate("/login")} 
               className="text-primary underline cursor-pointer"
             >
-              Create an account
-            </span>
-          </p>
-          <p>
-            <span
-              onClick={() => navigate("/forgot-password")} // Navigate to the sign-up page
-              className="text-primary underline cursor-pointer"
-            >
-              Forgot Password
+              Login here
             </span>
           </p>
         </div>
@@ -82,4 +90,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Signup;

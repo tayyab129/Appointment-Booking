@@ -1,22 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { assets } from "../assets/assets";
+import { auth } from '../../firebase'; // Firebase import
 
 const MyProfile = () => {
   const [userData, setUserData] = useState({
-    name: "Edward Vincent",
+    name: "",
     image: assets.prifole_pic,
     email: "softak@gmail.com",
     phone: "+92-303-456-3214",
     address: {
       line1: "57th Cross, Richmond",
-      line2: "Circle,Church Road,London",
+      line2: "Circle, Church Road, London",
     },
-
     gender: "Male",
     dob: "2002-08-25",
   });
 
   const [isEdit, setIsEdit] = useState(false);
+
+  // Fetch user data when the component mounts
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      setUserData((prevData) => ({
+        ...prevData,
+        name: currentUser.displayName || prevData.name, // Set the name from Firebase user profile
+      }));
+    }
+  }, []);
 
   return (
     <div className="max-w-lg flex flex-col gap-2 text-sm">
@@ -27,7 +38,7 @@ const MyProfile = () => {
           type="text"
           value={userData.name}
           onChange={(e) =>
-            setUserData((prev) => ({ ...prev, name: target.value }))
+            setUserData((prev) => ({ ...prev, name: e.target.value }))
           }
         />
       ) : (
@@ -48,7 +59,7 @@ const MyProfile = () => {
               type="text"
               value={userData.phone}
               onChange={(e) =>
-                setUserData((prev) => ({ ...prev, phone: target.value }))
+                setUserData((prev) => ({ ...prev, phone: e.target.value }))
               }
             />
           ) : (
