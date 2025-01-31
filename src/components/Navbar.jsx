@@ -1,29 +1,29 @@
 import React, { useState, useEffect } from "react";
 import { assets } from "../assets/assets";
 import { NavLink, useNavigate } from "react-router-dom";
-import { auth } from "../../firebase"; 
-import { signOut, onAuthStateChanged } from "firebase/auth"; 
-import { toast } from "react-toastify"; 
-import "react-toastify/dist/ReactToastify.css"; 
+import { auth } from "../../firebase";
+import { signOut, onAuthStateChanged } from "firebase/auth";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
-  const [token, setToken] = useState(false); 
-  const [user, setUser] = useState(null); 
+  const [token, setToken] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
-        setToken(true); 
-        setUser(currentUser); 
+        setToken(true);
+        setUser(currentUser);
       } else {
-        setToken(false); 
-        setUser(null); 
+        setToken(false);
+        setUser(null);
       }
     });
 
-    return () => unsubscribe(); 
+    return () => unsubscribe();
   }, []);
 
   const handleLogout = async () => {
@@ -84,7 +84,7 @@ const Navbar = () => {
             <div className="absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:block">
               <div className="min-w-48 bg-stone-100 rounded flex flex-col gap-4 p-4">
                 <p
-                  onClick={() => navigate("my-profile")}
+                  onClick={() => navigate("profile")}
                   className="hover:text-black cursor-pointer"
                 >
                   My Profile
@@ -96,7 +96,7 @@ const Navbar = () => {
                   My Appointment
                 </p>
                 <p
-                  onClick={handleLogout} 
+                  onClick={handleLogout}
                   className="hover:text-black cursor-pointer"
                 >
                   Logout
@@ -176,7 +176,7 @@ const Navbar = () => {
               className="hover:text-black cursor-pointer"
               onClick={(e) => {
                 e.preventDefault();
-                handleLogout(); 
+                handleLogout();
               }}
             >
               Logout

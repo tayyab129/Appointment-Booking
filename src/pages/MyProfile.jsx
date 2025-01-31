@@ -1,40 +1,42 @@
 import React, { useState, useEffect } from "react";
 import { assets } from "../assets/assets";
-import { auth } from '../../firebase'; // Firebase import
+import { auth } from "../../firebase";
 
 const MyProfile = () => {
   const [userData, setUserData] = useState({
     name: "",
     image: assets.prifole_pic,
-    email: "softak@gmail.com",
-    phone: "+92-303-456-3214",
+    email: "",
+    phone: "",
     address: {
-      line1: "57th Cross, Richmond",
-      line2: "Circle, Church Road, London",
+      line1: "",
+      line2: "",
     },
-    gender: "Male",
-    dob: "2002-08-25",
+    gender: "",
+    dob: "",
   });
 
   const [isEdit, setIsEdit] = useState(false);
 
-  // Fetch user data when the component mounts
   useEffect(() => {
     const currentUser = auth.currentUser;
     if (currentUser) {
+      // Set user data from Firebase Authentication
       setUserData((prevData) => ({
         ...prevData,
-        name: currentUser.displayName || prevData.name, // Set the name from Firebase user profile
+        name: currentUser.displayName || prevData.name, // Set name from Firebase user profile
+        email: currentUser.email || prevData.email, // Get email from Firebase user profile
+        image: currentUser.photoURL || prevData.image, // Get photo URL if available
       }));
     }
   }, []);
 
   return (
     <div className="max-w-lg flex flex-col gap-2 text-sm">
-      <img className="w-36 rounded" src={userData.image} alt="" />
+      <img className="w-36 rounded" src={userData.image} alt="Profile" />
       {isEdit ? (
         <input
-          className="bg-gray-50 text-3xl font-medium max-w-60 mt-4 "
+          className="bg-gray-50 text-3xl font-medium max-w-70 mt-4 "
           type="text"
           value={userData.name}
           onChange={(e) =>
@@ -48,8 +50,8 @@ const MyProfile = () => {
       )}
       <hr className="bg-zinc-500 h-[1px] border-none" />
       <div>
-        <p className="text-neutral-500 underline mt-3">CONTACT INFORMATION</p>
-        <div className="grid grid-cols-[1fr_3fr] gap-y-2.5 mt-3 text-neutral-500">
+        <p className="text-neutral-500 font-bold mt-3">CONTACT INFORMATION</p>
+        <div className="grid grid-cols-[1fr_3fr] gap-y-2.5 mt-3 text-neutral-500 cursor-pointer">
           <p className="font-medium">Email id:</p>
           <p className="text-blue-500">{userData.email}</p>
           <p className="font-medium">Phone:</p>
@@ -63,7 +65,7 @@ const MyProfile = () => {
               }
             />
           ) : (
-            <p className="text-blue-400">{userData.phone}</p>
+            <p className="text-blue-400">{userData.phone || "Not provided"}</p>
           )}
           <p className="font-medium">Address:</p>
           {isEdit ? (
@@ -94,16 +96,16 @@ const MyProfile = () => {
             </p>
           ) : (
             <p>
-              {userData.address.line1}
+              {userData.address.line1 || "Not provided"}
               <br />
-              {userData.address.line2}
+              {userData.address.line2 || "Not provided"}
             </p>
           )}
         </div>
       </div>
       <div>
-        <p className="text-neutral-500 underline mt-3">BASIC INFORMATION</p>
-        <div className="grid grid-cols-[1fr_3fr] gap-y-2.5 mt-3 text-neutral-700">
+        <p className="text-neutral-500 font-bold mt-3">BASIC INFORMATION</p>
+        <div className="grid grid-cols-[1fr_3fr] gap-y-2.5 mt-3 text-neutral-700 cursor-pointer ">
           <p className="font-medium">Gender:</p>
           {isEdit ? (
             <select
@@ -113,12 +115,13 @@ const MyProfile = () => {
               }
               value={userData.gender}
             >
+              <option value="">Select</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
-              <option value="other">other</option>
+              <option value="other">Other</option>
             </select>
           ) : (
-            <p className="text-gray-400">{userData.gender}</p>
+            <p className="text-gray-400">{userData.gender || "Not provided"}</p>
           )}
           <p>Birthday:</p>
           {isEdit ? (
@@ -131,7 +134,7 @@ const MyProfile = () => {
               value={userData.dob}
             />
           ) : (
-            <p className="text-gray-400">{userData.dob}</p>
+            <p className="text-gray-400">{userData.dob || "Not provided"}</p>
           )}
         </div>
       </div>
