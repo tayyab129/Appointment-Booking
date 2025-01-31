@@ -4,7 +4,25 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
-
+const cities = [
+  { value: "select", label: "Select" },
+  { value: "islamabad", label: "Islamabad" },
+  { value: "fsd", label: "Faisalabad" },
+  { value: "lahore", label: "Lahore" },
+  { value: "multan", label: "Multan" },
+  { value: "samundri", label: "Samundri" },
+  { value: "jaranwala", label: "Jaranwala" },
+  { value: "tandlianwala", label: "Tandlianwala" },
+  { value: "wazirabad", label: "Wazirabad" },
+  { value: "chiniot", label: "Chiniot" },
+  { value: "lyallpur", label: "Lyallpur" },
+  { value: "khanewal", label: "Khanewal" },
+  { value: "tahli", label: "Tahli" },
+  { value: "shujaabad", label: "Shujaabad" },
+  { value: "mehmoodkot", label: "Mehmoodkot" },
+  { value: "jabranwala", label: "Jabranwala" },
+  { value: "dunyapur", label: "Dunyapur" },
+];
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -12,6 +30,7 @@ const Signup = () => {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [gender, setGender] = useState("select");
+  const [city, setCity] = useState("select");
   const navigate = useNavigate();
 
   const onSubmitHandler = async (e) => {
@@ -84,6 +103,22 @@ const Signup = () => {
               onChange={(e) => setPhone(e.target.value)}
               value={phone}
             />
+          </div>
+
+          {/* Gender (additional field) */}
+          <div className="w-full">
+            <p>City</p>
+            <select
+              className="border border-zinc-300 rounded w-full p-2 mt-1"
+              onChange={(e) => setCity(e.target.value)}
+              value={city}
+            >
+              {cities.map((cityOption) => (
+                <option key={cityOption.value} value={cityOption.value}>
+                  {cityOption.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Address (additional field) */}

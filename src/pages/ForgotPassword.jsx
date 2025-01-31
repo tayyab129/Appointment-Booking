@@ -12,15 +12,8 @@ const ForgotPassword = () => {
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
-    const actionCodeSettings = {
-      url: "https://doctor-appointment-booking-sable.vercel.app/reset-password",
-      handleCodeInApp: true,
-    };
-
-    console.log("Sending reset email with settings:", actionCodeSettings);
-
     try {
-      await sendPasswordResetEmail(auth, email, actionCodeSettings);
+      await sendPasswordResetEmail(auth, email);
       toast.success("Password reset email sent! Check your inbox.");
       setTimeout(() => {
         navigate("/login");

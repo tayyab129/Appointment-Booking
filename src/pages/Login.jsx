@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { auth } from "../../firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
+} from "firebase/auth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -14,21 +17,30 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      // Login
+      const methods = await fetchSignInMethodsForEmail(auth, email);
+
+      if (methods.length === 0) {
+        toast.error("User not found with this email address.");
+        return;
+      }
+
       await signInWithEmailAndPassword(auth, email, password);
       toast.success("Logged in successfully!");
+
       setTimeout(() => {
-        
-        navigate('/')
+        navigate("/");
       }, 2000);
     } catch (error) {
-      toast.error(`Error: Invalid Credentials`);
+      toast.error("Error: Invalid Credentials");
     }
   };
 
   return (
     <>
-      <form className="min-h-[80vh] flex items-center" onSubmit={onSubmitHandler}>
+      <form
+        className="min-h-[80vh] flex items-center"
+        onSubmit={onSubmitHandler}
+      >
         <div className="flex flex-col gap-3 m-auto items-start p-8 min-w-[340px] sm:min-w-96 border rounded-xl text-zinc-600 text-sm shadow-lg">
           <p className="text-xl font-semibold">Login</p>
           <p>Please log in to book an appointment</p>
@@ -61,7 +73,7 @@ const Login = () => {
           <p>
             Don't have an account?{" "}
             <span
-              onClick={() => navigate("/signup")} // Navigate to the sign-up page
+              onClick={() => navigate("/signup")}
               className="text-primary underline cursor-pointer"
             >
               Create an account
@@ -69,7 +81,7 @@ const Login = () => {
           </p>
           <p>
             <span
-              onClick={() => navigate("/forgot-password")} // Navigate to the sign-up page
+              onClick={() => navigate("/forgot-password")}
               className="text-primary underline cursor-pointer"
             >
               Forgot Password
