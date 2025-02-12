@@ -1,9 +1,15 @@
 import React, { useState } from "react";
 import { auth } from "../../firebase";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  fetchSignInMethodsForEmail,
+} from "firebase/auth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
+import { getFirestore, doc, setDoc } from "firebase/firestore"; // Added missing imports
+
 const cities = [
   { value: "select", label: "Select" },
   { value: "islamabad", label: "Islamabad" },
@@ -23,6 +29,7 @@ const cities = [
   { value: "jabranwala", label: "Jabranwala" },
   { value: "dunyapur", label: "Dunyapur" },
 ];
+
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,11 +39,21 @@ const Signup = () => {
   const [gender, setGender] = useState("select");
   const [city, setCity] = useState("select");
   const navigate = useNavigate();
+  const db = getFirestore();
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
     try {
+      // Check if email already exists
+      const methods = await fetchSignInMethodsForEmail(auth, email);
+      if (methods.length > 0) {
+        // If email exists, show error message and toast
+        toast.error("An account already exists with this email.");
+        return;
+      }
+
+      // If email doesn't exist, proceed with signup
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -44,21 +61,38 @@ const Signup = () => {
       );
       const user = userCredential.user;
 
-      await updateProfile(user, {
-        displayName: name,
+      // Update the user's display name
+      await updateProfile(user, { displayName: name });
+
+      // Create a new user document in Firestore
+      const userRef = doc(db, "users", user.uid);
+      await setDoc(userRef, {
+        name,
+        email,
+        phone,
+        address,
+        gender,
+        city,
+        createdAt: new Date(), // Timestamp when the account is created
       });
 
-      console.log("Phone:", phone);
-      console.log("Address:", address);
-      console.log("Gender:", gender);
-
+      // Show success message and navigate to profile page
       toast.success(`${name}! Your account has been created successfully!`);
 
       setTimeout(() => {
         navigate("/profile");
       }, 2000);
     } catch (error) {
-      toast.error(`Error: Something Went Wrong`);
+      // Log the actual error for debugging
+      console.error("Error during signup:", error);
+
+      // Check if the error is related to email already being in use
+      if (error.code === "auth/email-already-in-use") {
+        toast.error("An account already exists with this email.");
+      } else {
+        // For other errors, show a generic message
+        toast.error("Error: Something went wrong");
+      }
     }
   };
 
@@ -94,7 +128,7 @@ const Signup = () => {
             />
           </div>
 
-          {/* Phone (additional field) */}
+          {/* Phone */}
           <div className="w-full">
             <p>Phone</p>
             <input
@@ -105,7 +139,7 @@ const Signup = () => {
             />
           </div>
 
-          {/* Gender (additional field) */}
+          {/* City */}
           <div className="w-full">
             <p>City</p>
             <select
@@ -121,7 +155,7 @@ const Signup = () => {
             </select>
           </div>
 
-          {/* Address (additional field) */}
+          {/* Address */}
           <div className="w-full">
             <p>Address</p>
             <input
@@ -132,7 +166,7 @@ const Signup = () => {
             />
           </div>
 
-          {/* Gender (additional field) */}
+          {/* Gender */}
           <div className="w-full">
             <p>Gender</p>
             <select
