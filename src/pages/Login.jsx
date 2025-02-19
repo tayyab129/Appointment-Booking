@@ -1,9 +1,5 @@
 import React, { useState } from "react";
-import { auth } from "../../firebase";
-import {
-  signInWithEmailAndPassword,
-  fetchSignInMethodsForEmail,
-} from "firebase/auth";
+import { supabase } from "../../supabase";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
@@ -16,38 +12,33 @@ const Login = () => {
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
-    const emailTrimmed = email.trim(); // Trim any spaces in the email
+    const emailTrimmed = email.trim();
 
     try {
-      // First, check if the email exists in Firebase
-      const methods = await fetchSignInMethodsForEmail(auth, emailTrimmed);
-      console.log("Methods for this email:", methods);
+      const { error, data } = await supabase.auth.signInWithPassword({
+        email: emailTrimmed,
+        password: password,
+      });
 
-      if (methods.length === 0) {
-        toast.error("User not found with this email address.");
+      if (error) {
+        console.error("Error logging in:", error);
+        if (error.message.includes("Invalid login credentials")) {
+          toast.error("Incorrect email or password. Please try again.");
+        } else if (error.message.includes("Too many requests")) {
+          toast.error("Too many login attempts. Please try again later.");
+        } else {
+          toast.error("An unknown error occurred. Please try again later.");
+        }
         return;
       }
 
-      // If email exists, proceed with sign-in attempt
-      await signInWithEmailAndPassword(auth, emailTrimmed, password);
       toast.success("Logged in successfully!");
-
       setTimeout(() => {
-        navigate("/"); // Navigate to the home page or dashboard
+        navigate("/");
       }, 2000);
     } catch (error) {
       console.error("Error logging in:", error);
-
-      // Specific Firebase error handling
-      if (error.code === "auth/user-not-found") {
-        toast.error("User not found with this email address.");
-      } else if (error.code === "auth/wrong-password") {
-        toast.error("Incorrect password. Please try again.");
-      } else if (error.code === "auth/too-many-requests") {
-        toast.error("Too many login attempts. Please try again later.");
-      } else {
-        toast.error("An unknown error occurred. Please try again later.");
-      }
+      toast.error("An unexpected error occurred. Please try again later.");
     }
   };
 

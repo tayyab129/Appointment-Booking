@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { assets } from "../assets/assets";
-import { auth } from "../../firebase";
+import { supabase } from "../../supabase"; // Import the Supabase client
 
 const MyProfile = () => {
   const [userData, setUserData] = useState({
@@ -19,16 +19,39 @@ const MyProfile = () => {
   const [isEdit, setIsEdit] = useState(false);
 
   useEffect(() => {
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      // Set user data from Firebase Authentication
-      setUserData((prevData) => ({
-        ...prevData,
-        name: currentUser.displayName || prevData.name, // Set name from Firebase user profile
-        email: currentUser.email || prevData.email, // Get email from Firebase user profile
-        image: currentUser.photoURL || prevData.image, // Get photo URL if available
-      }));
-    }
+    const fetchUserData = async () => {
+      // Get the current user from Supabase
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        // Fetch additional user data from a `profiles` table in Supabase
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (profile) {
+          setUserData((prevData) => ({
+            ...prevData,
+            name: profile.name || prevData.name,
+            email: user.email || prevData.email,
+            image: profile.image || prevData.image,
+            phone: profile.phone || prevData.phone,
+            address: {
+              line1: profile.address_line1 || prevData.address.line1,
+              line2: profile.address_line2 || prevData.address.line2,
+            },
+            gender: profile.gender || prevData.gender,
+            dob: profile.dob || prevData.dob,
+          }));
+        }
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   return (

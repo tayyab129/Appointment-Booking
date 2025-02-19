@@ -1,14 +1,8 @@
 import React, { useState } from "react";
-import { auth } from "../../firebase";
-import {
-  createUserWithEmailAndPassword,
-  updateProfile,
-  fetchSignInMethodsForEmail,
-} from "firebase/auth";
+import { supabase } from "../../supabase";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
-import { getFirestore, doc, setDoc } from "firebase/firestore"; // Added missing imports
 
 const cities = [
   { value: "select", label: "Select" },
@@ -39,60 +33,59 @@ const Signup = () => {
   const [gender, setGender] = useState("select");
   const [city, setCity] = useState("select");
   const navigate = useNavigate();
-  const db = getFirestore();
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
     try {
-      // Check if email already exists
-      const methods = await fetchSignInMethodsForEmail(auth, email);
-      if (methods.length > 0) {
-        // If email exists, show error message and toast
-        toast.error("An account already exists with this email.");
+      const { user, error: signupError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signupError) {
+        if (signupError.message.includes("duplicate key value")) {
+          toast.error("Email already exists, please log in.");
+        } else {
+          toast.error("Something went wrong. Please try again later.");
+        }
         return;
       }
 
-      // If email doesn't exist, proceed with signup
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
+      if (!user) {
+        toast.error("Something went wrong. Please try again later.");
+        return;
+      }
+
+      const { data: userData, error: insertError } = await supabase
+        .from("users")
+        .insert([
+          {
+            id: user.id,
+            name,
+            email,
+            phone,
+            address,
+            gender,
+            city,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+
+      if (insertError) {
+        toast.error("Something went wrong. Please try again later.");
+        return;
+      }
+
+      toast.success(
+        `${name}, your account has been created successfully! Please check your inbox to confirm your email address.`
       );
-      const user = userCredential.user;
-
-      // Update the user's display name
-      await updateProfile(user, { displayName: name });
-
-      // Create a new user document in Firestore
-      const userRef = doc(db, "users", user.uid);
-      await setDoc(userRef, {
-        name,
-        email,
-        phone,
-        address,
-        gender,
-        city,
-        createdAt: new Date(), // Timestamp when the account is created
-      });
-
-      // Show success message and navigate to profile page
-      toast.success(`${name}! Your account has been created successfully!`);
-
       setTimeout(() => {
         navigate("/profile");
       }, 2000);
     } catch (error) {
-      // Log the actual error for debugging
       console.error("Error during signup:", error);
-
-      // Check if the error is related to email already being in use
-      if (error.code === "auth/email-already-in-use") {
-        toast.error("An account already exists with this email.");
-      } else {
-        // For other errors, show a generic message
-        toast.error("Error: Something went wrong");
-      }
+      toast.error("Something went wrong. Please try again later.");
     }
   };
 
@@ -114,6 +107,7 @@ const Signup = () => {
               type="text"
               onChange={(e) => setName(e.target.value)}
               value={name}
+              required
             />
           </div>
 
@@ -125,60 +119,69 @@ const Signup = () => {
               type="email"
               onChange={(e) => setEmail(e.target.value)}
               value={email}
+              required
             />
           </div>
 
           {/* Phone */}
-          <div className="w-full">
-            <p>Phone</p>
-            <input
-              className="border border-zinc-300 rounded w-full p-2 mt-1"
-              type="text"
-              onChange={(e) => setPhone(e.target.value)}
-              value={phone}
-            />
-          </div>
+          <div className="w-full flex gap-3">
+            <div className="w-full">
+              <p>Phone</p>
+              <input
+                className="border border-zinc-300 rounded w-full p-2 mt-1"
+                type="text"
+                onChange={(e) => setPhone(e.target.value)}
+                value={phone}
+                required
+              />
+            </div>
 
-          {/* City */}
-          <div className="w-full">
-            <p>City</p>
-            <select
-              className="border border-zinc-300 rounded w-full p-2 mt-1"
-              onChange={(e) => setCity(e.target.value)}
-              value={city}
-            >
-              {cities.map((cityOption) => (
-                <option key={cityOption.value} value={cityOption.value}>
-                  {cityOption.label}
-                </option>
-              ))}
-            </select>
+            {/* City */}
+            <div className="w-full">
+              <p>City</p>
+              <select
+                className="border border-zinc-300 rounded w-full p-2 mt-1"
+                onChange={(e) => setCity(e.target.value)}
+                value={city}
+                required
+              >
+                {cities.map((cityOption) => (
+                  <option key={cityOption.value} value={cityOption.value}>
+                    {cityOption.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Address */}
-          <div className="w-full">
-            <p>Address</p>
-            <input
-              className="border border-zinc-300 rounded w-full p-2 mt-1"
-              type="text"
-              onChange={(e) => setAddress(e.target.value)}
-              value={address}
-            />
-          </div>
+          <div className="w-full flex gap-3">
+            <div className="w-full">
+              <p>Address</p>
+              <input
+                className="border border-zinc-300 rounded w-full p-2 mt-1"
+                type="text"
+                onChange={(e) => setAddress(e.target.value)}
+                value={address}
+                required
+              />
+            </div>
 
-          {/* Gender */}
-          <div className="w-full">
-            <p>Gender</p>
-            <select
-              className="border border-zinc-300 rounded w-full p-2 mt-1"
-              onChange={(e) => setGender(e.target.value)}
-              value={gender}
-            >
-              <option value="select">Select</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
+            {/* Gender */}
+            <div className="w-full">
+              <p>Gender</p>
+              <select
+                className="border border-zinc-300 rounded w-full p-2 mt-1"
+                onChange={(e) => setGender(e.target.value)}
+                value={gender}
+                required
+              >
+                <option value="select">Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
           </div>
 
           {/* Password */}
@@ -189,6 +192,7 @@ const Signup = () => {
               type="password"
               onChange={(e) => setPassword(e.target.value)}
               value={password}
+              required
             />
           </div>
 

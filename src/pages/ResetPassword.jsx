@@ -1,81 +1,66 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { auth } from "../../firebase";
-import { confirmPasswordReset } from "firebase/auth";
+// src/pages/ResetPassword.tsx
+import React, { useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { supabase } from "../../supabase";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const ResetPassword = () => {
   const [newPassword, setNewPassword] = useState("");
-  const [error, setError] = useState("");
+  const [searchParams] = useSearchParams();
+  const accessToken = searchParams.get("access_token");
   const navigate = useNavigate();
-  const location = useLocation();
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const oobCode = urlParams.get("oobCode");
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
 
-    if (!oobCode) {
-      setError("Invalid password reset link.");
-    }
-  }, [location]);
-
-  const handlePasswordReset = async (e) => {
-    e.preventDefault(); // Prevent form default behavior
-
-    const urlParams = new URLSearchParams(location.search);
-    const oobCode = urlParams.get("oobCode");
-
-    if (!oobCode) {
-      setError("Invalid password reset link.");
+    if (!accessToken) {
+      toast.error("Invalid reset link.");
       return;
     }
 
     try {
-      await confirmPasswordReset(auth, oobCode, newPassword);
-      toast.success("Password has been successfully reset!");
-      navigate("/login");
-    } catch (err) {
-      setError("Failed to reset password. Please try again.");
+      const { error } = await supabase.auth.api.updateUser(accessToken, {
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      toast.success("Password reset successfully! You can now log in.");
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast.error(`Error: ${error.message}`);
     }
   };
 
   return (
     <>
       <form
-        className="min-h-[80vh] flex items-center justify-center bg-gray-50"
-        onSubmit={handlePasswordReset}
+        className="min-h-[80vh] flex items-center"
+        onSubmit={handleResetPassword}
       >
-        <div className="flex flex-col gap-5 p-8 min-w-[340px] sm:min-w-96 border rounded-xl text-zinc-600 text-sm shadow-lg bg-white">
-          <p className="text-2xl font-semibold text-center">Reset Password</p>
-          <h2 className="text-lg text-center">Enter your new password below</h2>
-          {error && <p className="text-red-500 text-center">{error}</p>}
+        <div className="flex flex-col gap-3 m-auto items-start p-8 min-w-[340px] sm:min-w-96 border rounded-xl text-zinc-600 text-sm shadow-lg">
+          <p className="text-xl font-semibold">Reset Password</p>
+          <p>Enter your new password below.</p>
           <div className="w-full">
-            <label className="text-sm text-gray-700">New Password</label>
             <input
               type="password"
-              className="border border-zinc-300 rounded w-full p-2 mt-2"
-              placeholder="Enter your new password"
+              placeholder="New Password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              className="border border-zinc-300 rounded w-full p-2 mt-1"
               required
             />
           </div>
           <button
             type="submit"
-            className="bg-primary text-white w-full py-2 mt-4 rounded-md text-base hover:bg-primary-dark transition-all"
+            className="bg-primary text-white w-full py-2 rounded-md text-base"
           >
             Reset Password
           </button>
-          <p className="text-center mt-4">
-            Remember your password?{" "}
-            <span
-              onClick={() => navigate("/login")}
-              className="text-primary underline cursor-pointer"
-            >
-              Login here
-            </span>
-          </p>
         </div>
       </form>
       <ToastContainer />

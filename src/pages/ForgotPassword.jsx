@@ -1,49 +1,38 @@
 import React, { useState } from "react";
-import { auth } from "../../firebase";
-import {
-  sendPasswordResetEmail,
-  fetchSignInMethodsForEmail,
-} from "firebase/auth";
+import { supabase } from "../../supabase";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
-  const [error, setError] = useState(""); // For error message
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
-    setError(""); // Reset error state before checking
-
-    const emailTrimmed = email.trim().toLowerCase(); // Trim and lower case the email
+    setError("");
+    const emailTrimmed = email.trim().toLowerCase();
 
     try {
-      // Check if the email exists
-      const methods = await fetchSignInMethodsForEmail(auth, emailTrimmed);
-      console.log("Methods for email:", methods); // Log the methods returned by Firebase
+      const { data, error } = await supabase.auth.api.resetPasswordForEmail(
+        emailTrimmed,
+        { redirectTo: `${window.location.origin}/reset-password` } // Custom reset password page
+      );
 
-      if (methods.length === 0) {
-        console.log("No sign-in methods for this email"); // Log if no sign-in methods are found
+      if (error) {
+        console.error("Error sending reset email:", error);
         setError("No account associated with this email.");
         toast.error("No account found with this email!");
-        return;
+      } else {
+        toast.success("Password reset email sent! Check your inbox.");
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
       }
-
-      // Send reset email if account exists
-      await sendPasswordResetEmail(auth, emailTrimmed);
-      toast.success("Password reset email sent! Check your inbox.");
-
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
-    } catch (error) {
-      console.error("Error sending reset email:", error);
-      if (error.code) {
-        console.error("Firebase error code:", error.code); // Log the Firebase error code
-      }
+    } catch (err) {
+      console.error("Error:", err);
       toast.error("Error: Something went wrong.");
     }
   };
@@ -58,10 +47,10 @@ const ForgotPassword = () => {
           <p className="text-xl font-semibold">Forgot Password</p>
           <p>Enter your email to receive a password reset link</p>
           <div className="w-full">
-            <p>Email</p>
             <input
               className="border border-zinc-300 rounded w-full p-2 mt-1"
               type="email"
+              placeholder="Enter email"
               onChange={(e) => setEmail(e.target.value)}
               value={email}
               required
@@ -77,7 +66,7 @@ const ForgotPassword = () => {
           <p>
             Remember your password?{" "}
             <span
-              onClick={() => navigate("/login")} // Navigate to login page
+              onClick={() => navigate("/login")}
               className="text-primary underline cursor-pointer"
             >
               Login here

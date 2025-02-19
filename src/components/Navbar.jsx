@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { assets } from "../assets/assets";
 import { NavLink, useNavigate } from "react-router-dom";
-import { auth } from "../../firebase";
-import { signOut, onAuthStateChanged } from "firebase/auth";
+import { assets } from "../assets/assets";
+import { supabase } from "../../supabase";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -13,29 +12,36 @@ const Navbar = () => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setToken(true);
-        setUser(currentUser);
-      } else {
-        setToken(false);
-        setUser(null);
-      }
-    });
+    const session = supabase.auth.getSession();
+    if (session) {
+      setUser(session.user);
+      setToken(true);
+    } else {
+      setUser(null);
+      setToken(false);
+    }
 
-    return () => unsubscribe();
+    const authListener = supabase.auth.onAuthStateChange(
+      (_, currentSession) => {
+        if (currentSession) {
+          setUser(currentSession.user);
+          setToken(true);
+        } else {
+          setUser(null);
+          setToken(false);
+        }
+      }
+    );
+
+    return () => {};
   }, []);
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-
+      await supabase.auth.signOut();
       toast.success("Logged out successfully!");
-
       setToken(false);
-
       setShowMenu(false);
-
       navigate("/login");
     } catch (error) {
       toast.error("Error logging out. Please try again.");
@@ -106,7 +112,7 @@ const Navbar = () => {
           </div>
         ) : (
           <button
-            onClick={() => navigate("/signup")}
+            onClick={() => navigate("/login")}
             className="bg-primary border rounded-full px-8 py-3 text-white font-light hidden md:block"
           >
             Create account
