@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { supabase } from "../../supabase";
+import { auth } from "../firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
@@ -15,30 +16,24 @@ const Login = () => {
     const emailTrimmed = email.trim();
 
     try {
-      const { error, data } = await supabase.auth.signInWithPassword({
-        email: emailTrimmed,
-        password: password,
-      });
-
-      if (error) {
-        console.error("Error logging in:", error);
-        if (error.message.includes("Invalid login credentials")) {
-          toast.error("Incorrect email or password. Please try again.");
-        } else if (error.message.includes("Too many requests")) {
-          toast.error("Too many login attempts. Please try again later.");
-        } else {
-          toast.error("An unknown error occurred. Please try again later.");
-        }
-        return;
-      }
+      await signInWithEmailAndPassword(auth, emailTrimmed, password);
 
       toast.success("Logged in successfully!");
-      setTimeout(() => {
-        navigate("/");
-      }, 2000);
+      navigate("/");
     } catch (error) {
       console.error("Error logging in:", error);
-      toast.error("An unexpected error occurred. Please try again later.");
+      if (error.code === "auth/user-not-found") {
+        toast.error("No account found with this email. Please sign up first.");
+      } else if (error.code === "auth/wrong-password") {
+        toast.error("Incorrect password. Please try again.");
+      } else if (error.code === "auth/too-many-requests") {
+        toast.error("Too many login attempts. Please try again later.");
+      } else {
+        toast.error(
+          error.message ||
+            "An unexpected error occurred. Please try again later."
+        );
+      }
     }
   };
 

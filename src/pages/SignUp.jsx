@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { supabase } from "../../supabase";
+import { auth, db } from "../firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
@@ -34,58 +36,61 @@ const Signup = () => {
   const [city, setCity] = useState("select");
   const navigate = useNavigate();
 
+  // Function to reset form
+  const resetForm = () => {
+    setEmail("");
+    setPassword("");
+    setName("");
+    setPhone("");
+    setAddress("");
+    setGender("select");
+    setCity("select");
+  };
+
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
     try {
-      const { user, error: signupError } = await supabase.auth.signUp({
+      // Create user with email and password
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
         email,
-        password,
+        password
+      );
+      const user = userCredential.user;
+
+      // Create user profile in Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        name,
+        email,
+        phone,
+        address,
+        gender,
+        city,
+        created_at: new Date().toISOString(),
+        emailVerified: true,
       });
 
-      if (signupError) {
-        if (signupError.message.includes("duplicate key value")) {
-          toast.error("Email already exists, please log in.");
-        } else {
-          toast.error("Something went wrong. Please try again later.");
-        }
-        return;
-      }
-
-      if (!user) {
-        toast.error("Something went wrong. Please try again later.");
-        return;
-      }
-
-      const { data: userData, error: insertError } = await supabase
-        .from("users")
-        .insert([
-          {
-            id: user.id,
-            name,
-            email,
-            phone,
-            address,
-            gender,
-            city,
-            created_at: new Date().toISOString(),
-          },
-        ]);
-
-      if (insertError) {
-        toast.error("Something went wrong. Please try again later.");
-        return;
-      }
-
-      toast.success(
-        `${name}, your account has been created successfully! Please check your inbox to confirm your email address.`
-      );
-      setTimeout(() => {
-        navigate("/profile");
-      }, 2000);
+      resetForm(); // Reset the form
+      toast.success("Account created successfully!", {
+        autoClose: 1000,
+        onClose: () => {
+          navigate("/", { replace: true });
+        },
+      });
     } catch (error) {
       console.error("Error during signup:", error);
-      toast.error("Something went wrong. Please try again later.");
+      if (error.code === "auth/email-already-in-use") {
+        toast.error("Email already exists, please log in.");
+      } else if (error.code === "auth/weak-password") {
+        toast.error("Password should be at least 6 characters long.");
+      } else if (error.code === "auth/invalid-email") {
+        toast.error("Invalid email address.");
+      } else {
+        toast.error(
+          error.message || "Something went wrong. Please try again later."
+        );
+      }
     }
   };
 

@@ -1,49 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
-import { supabase } from "../../supabase";
+import { auth } from "../firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
-  const [token, setToken] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const session = supabase.auth.getSession();
-    if (session) {
-      setUser(session.user);
-      setToken(true);
-    } else {
-      setUser(null);
-      setToken(false);
-    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+    });
 
-    const authListener = supabase.auth.onAuthStateChange(
-      (_, currentSession) => {
-        if (currentSession) {
-          setUser(currentSession.user);
-          setToken(true);
-        } else {
-          setUser(null);
-          setToken(false);
-        }
-      }
-    );
-
-    return () => {};
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await signOut(auth);
       toast.success("Logged out successfully!");
-      setToken(false);
       setShowMenu(false);
       navigate("/login");
     } catch (error) {
+      console.error("Error logging out:", error);
       toast.error("Error logging out. Please try again.");
     }
   };
@@ -75,11 +59,11 @@ const Navbar = () => {
         </NavLink>
       </ul>
       <div className="flex items-center">
-        {token ? (
+        {user ? (
           <div className="flex items-center gap-2 cursor-pointer group relative">
             <img
               className="w-8 rounded-full hidden sm:block"
-              src={user?.photoURL || assets.prifole_pic}
+              src={user.photoURL || assets.prifole_pic}
               alt="Profile"
             />
             <img
